@@ -115,3 +115,17 @@ sys_sysinfo(void)
 
   return 0;
 }
+
+uint64 sys_trace(void)
+{
+  int tracemask;
+  struct proc *p = myproc();
+  
+  if(argint(0, &tracemask) < 0)
+    return -1;
+
+  p->tracemask = tracemask;
+  
+  
+  return 0;
+}

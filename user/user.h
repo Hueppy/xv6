@@ -26,6 +26,7 @@ int sleep(int);
 int uptime(void);
 int lseek(int fd, int offset, int whence);
 int sysinfo(struct sysinfo *);
+int trace(int tracemask);
 
 // ulib.c
 int stat(const char*, struct stat*);
