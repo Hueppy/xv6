@@ -484,3 +484,47 @@ sys_pipe(void)
   }
   return 0;
 }
+
+uint64
+sys_lseek(void)
+{
+  struct file *f;
+  int offset, whence;
+  int new_offset;
+
+  if(argfd(0, 0, &f) < 0 ||
+     argint(1, &offset) < 0 ||
+     argint(2, &whence) < 0){
+    return -1;
+  }
+
+  // fail if fd ist something other than a file
+  // see ESPIPE in linux man-pages
+  if (f->type != FD_INODE){
+    return -1;
+  }
+
+  switch(whence) {
+  case SEEK_SET:
+    new_offset = offset;
+    break;
+  case SEEK_CUR:
+    new_offset = f->off + offset;
+    break;
+  case SEEK_END:
+    new_offset = f->ip->size + offset;
+    break;
+
+  // fail if parameter whence is invalid
+  default:
+      return -1;
+  }
+
+  // fail if offset is outside file boundaries
+  if (new_offset < 0 || new_offset > f->ip->size){
+    return -1;
+  }
+
+  f->off = new_offset;
+  return new_offset;
+}
