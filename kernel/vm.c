@@ -432,3 +432,37 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
     return -1;
   }
 }
+
+void ptprint(pagetable_t pagetable, int depth)
+{
+  char flags[PTE_FLAGCOUNT];
+  char fnames[PTE_FLAGCOUNT] = "UXWRV";
+  uint64 fvalues[PTE_FLAGCOUNT] = { PTE_U, PTE_X, PTE_W, PTE_R, PTE_V };
+  pte_t pte;  
+  
+  for(int i = 0; i < PTE_COUNT; ++i){    
+    pte = pagetable[i];
+    if ((pte & PTE_V) == 0)
+      continue;
+    
+    for(int j = 0; j < PTE_FLAGCOUNT; ++j){
+      if(pte & fvalues[j])
+        flags[j] = fnames[j];
+      else
+        flags[j] = '-';
+    }
+    
+    for(int j = 0; j < depth; ++j)
+      printf(".. ");    
+    printf("%d: pte %p pa %p flags %s\n", i, pte, PTE2PA(pte), flags);
+
+    if((pte & (PTE_R | PTE_W | PTE_X)) == 0)
+      ptprint((pagetable_t)PTE2PA(pte), depth + 1);
+  }
+}
+
+void vmprint(pagetable_t pagetable)
+{
+  printf("page table %p\n", pagetable);
+  ptprint(pagetable, 1); 
+}
