@@ -132,3 +132,20 @@ printfinit(void)
   initlock(&pr.lock, "pr");
   pr.locking = 1;
 }
+
+void
+backtrace(void)
+{
+  uint64 fp, sp, sb;
+
+  fp = r_fp();
+  
+  sp = PGROUNDUP(fp);
+  sb = PGROUNDDOWN(fp);
+
+  while(fp >= sb && fp < sp)
+  {
+    printf("%p\n", *RETURNADDR(fp));
+    fp = *PREVFRAME(fp);
+  }
+}

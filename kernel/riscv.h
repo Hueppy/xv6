@@ -372,3 +372,6 @@ sfence_vma()
 
 typedef uint64 pte_t;
 typedef uint64 *pagetable_t; // 512 PTEs
+
+#define RETURNADDR(fp) ((uint64*)(fp - 8))
+#define PREVFRAME(fp) ((uint64*)(fp - 16))
