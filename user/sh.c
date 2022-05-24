@@ -50,6 +50,7 @@ struct backcmd {
 };
 
 int fork1(void);  // Fork but panics on failure.
+int exec1(char* path, char** argv);
 void panic(char*);
 struct cmd *parsecmd(char*);
 
@@ -75,7 +76,7 @@ runcmd(struct cmd *cmd)
     ecmd = (struct execcmd*)cmd;
     if(ecmd->argv[0] == 0)
       exit(1);
-    exec(ecmd->argv[0], ecmd->argv);
+    exec1(ecmd->argv[0], ecmd->argv);
     fprintf(2, "exec %s failed\n", ecmd->argv[0]);
     break;
 
@@ -187,6 +188,21 @@ fork1(void)
   if(pid == -1)
     panic("fork");
   return pid;
+}
+
+int
+exec1(char *path, char **argv)
+{
+  int result;
+  char buf[100];
+
+  result = exec(path, argv);
+  if (result == -1 && path[0] != '/' && path[0] != '.'){
+    buf[0] = '/';
+    strcpy(&buf[1], path);
+    result = exec(buf, argv);
+  }
+  return result;
 }
 
 //PAGEBREAK!
