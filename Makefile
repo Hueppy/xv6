@@ -136,6 +136,8 @@ UPROGS=\
 	$U/_lseektest\
 	$U/_sysinfotest\
 	$U/_trace\
+	$U/_bttest\
+	$U/_lazytests\
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)

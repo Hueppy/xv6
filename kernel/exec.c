@@ -64,6 +64,7 @@ exec(char *path, char **argv)
   p = myproc();
   uint64 oldsz = p->sz;
   uint64 oldstacksize = p->stacksize;
+  uint64 heapbase = sz;
 
   // Allocate two pages at the next page boundary.
   // Use the second as the user stack.
@@ -114,6 +115,7 @@ exec(char *path, char **argv)
   oldpagetable = p->pagetable;
   p->pagetable = pagetable;
   p->sz = sz;
+  p->heapbase = heapbase;
   p->trapframe->epc = elf.entry;  // initial program counter = main
   p->trapframe->sp = sp; // initial stack pointer
   proc_freepagetable(oldpagetable, oldsz, oldstacksize);
