@@ -107,4 +107,5 @@ struct proc {
   char name[16];               // Process name (debugging)
   uint64 stacksize;
   int tracemask;
+  uint64 heapbase;
 };

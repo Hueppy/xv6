@@ -471,7 +471,7 @@ int uvmalloc_lazy(struct proc *p, uint64 addr)
   uint64 pgstart;
   char *mem;
 
-  if(addr >= p->sz || addr < PGROUNDDOWN(p->trapframe->sp))
+  if(addr >= p->sz || addr < PGROUNDDOWN(p->heapbase))
     return -1;
 
   pgstart = PGROUNDDOWN(addr);
