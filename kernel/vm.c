@@ -5,6 +5,8 @@
 #include "riscv.h"
 #include "defs.h"
 #include "fs.h"
+#include "spinlock.h"
+#include "proc.h"
 
 /*
  * the kernel's page table.
@@ -110,12 +112,11 @@ walkaddr(pagetable_t pagetable, uint64 va)
     return 0;
 
   pte = walk(pagetable, va, 0);
-  if(pte == 0)
-    return 0;
-  if((*pte & PTE_V) == 0)
-    return 0;
-  if((*pte & PTE_U) == 0)
-    return 0;
+  if(pte == 0 || (*pte & PTE_V) == 0 || (*pte & PTE_U) == 0){
+    if(uvmalloc_lazy(myproc(), va))
+      return 0;
+  } 
+  
   pa = PTE2PA(*pte);
   return pa;
 }
@@ -172,10 +173,8 @@ uvmunmap(pagetable_t pagetable, uint64 va, uint64 npages, int do_free)
     panic("uvmunmap: not aligned");
 
   for(a = va; a < va + npages*PGSIZE; a += PGSIZE){
-    if((pte = walk(pagetable, a, 0)) == 0)
-      panic("uvmunmap: walk");
-    if((*pte & PTE_V) == 0)
-      panic("uvmunmap: not mapped");
+    if((pte = walk(pagetable, a, 0)) == 0 || ((*pte & PTE_V) == 0))
+      continue;
     if(PTE_FLAGS(*pte) == PTE_V)
       panic("uvmunmap: not a leaf");
     if(do_free){
@@ -284,10 +283,12 @@ freewalk(pagetable_t pagetable)
 // Free user memory pages,
 // then free page-table pages.
 void
-uvmfree(pagetable_t pagetable, uint64 sz)
+uvmfree(pagetable_t pagetable, uint64 sz, uint64 stacksize)
 {
   if(sz > 0)
     uvmunmap(pagetable, 0, PGROUNDUP(sz)/PGSIZE, 1);
+  if(stacksize > 0)
+    uvmunmap(pagetable, STACK - stacksize, PGROUNDUP(stacksize) / PGSIZE, 1);
   freewalk(pagetable);
 }
 
@@ -298,18 +299,16 @@ uvmfree(pagetable_t pagetable, uint64 sz)
 // returns 0 on success, -1 on failure.
 // frees any allocated pages on failure.
 int
-uvmcopy(pagetable_t old, pagetable_t new, uint64 sz)
+uvmcopy(pagetable_t old, pagetable_t new, uint64 lo, uint64 hi)
 {
   pte_t *pte;
   uint64 pa, i;
   uint flags;
   char *mem;
 
-  for(i = 0; i < sz; i += PGSIZE){
-    if((pte = walk(old, i, 0)) == 0)
-      panic("uvmcopy: pte should exist");
-    if((*pte & PTE_V) == 0)
-      panic("uvmcopy: page not present");
+  for(i = lo; i < hi; i += PGSIZE){
+    if((pte = walk(old, i, 0)) == 0 || (*pte & PTE_V) == 0)
+      continue;
     pa = PTE2PA(*pte);
     flags = PTE_FLAGS(*pte);
     if((mem = kalloc()) == 0)
@@ -431,4 +430,62 @@ copyinstr(pagetable_t pagetable, char *dst, uint64 srcva, uint64 max)
   } else {
     return -1;
   }
+}
+
+void ptprint(pagetable_t pagetable, int depth)
+{
+  char flags[PTE_FLAGCOUNT];
+  char fnames[PTE_FLAGCOUNT] = "UXWRV";
+  uint64 fvalues[PTE_FLAGCOUNT] = { PTE_U, PTE_X, PTE_W, PTE_R, PTE_V };
+  pte_t pte;  
+  
+  for(int i = 0; i < PTE_COUNT; ++i){    
+    pte = pagetable[i];
+    if ((pte & PTE_V) == 0)
+      continue;
+    
+    for(int j = 0; j < PTE_FLAGCOUNT; ++j){
+      if(pte & fvalues[j])
+        flags[j] = fnames[j];
+      else
+        flags[j] = '-';
+    }
+    
+    for(int j = 0; j < depth; ++j)
+      printf(".. ");    
+    printf("%d: pte %p pa %p flags %s\n", i, pte, PTE2PA(pte), flags);
+
+    if((pte & (PTE_R | PTE_W | PTE_X)) == 0)
+      ptprint((pagetable_t)PTE2PA(pte), depth + 1);
+  }
+}
+
+void vmprint(pagetable_t pagetable)
+{
+  printf("page table %p\n", pagetable);
+  ptprint(pagetable, 1); 
+}
+
+int uvmalloc_lazy(struct proc *p, uint64 addr)
+{
+  uint64 pgstart;
+  char *mem;
+
+  if(addr >= p->sz || addr < PGROUNDDOWN(p->heapbase))
+    return -1;
+
+  pgstart = PGROUNDDOWN(addr);
+    
+  mem = kalloc();
+  if (mem == 0){
+    return -1;
+  }
+  
+  memset(mem, 0, PGSIZE);
+  if(mappages(p->pagetable, pgstart, PGSIZE, (uint64)mem, PTE_W|PTE_X|PTE_R|PTE_U) != 0) {
+    kfree(mem);
+    return -1;
+  }
+
+  return 0;
 }

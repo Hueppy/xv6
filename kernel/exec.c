@@ -14,7 +14,7 @@ exec(char *path, char **argv)
 {
   char *s, *last;
   int i, off, perm;
-  uint64 argc, sz = 0, sp, ustack[MAXARG], stackbase;
+  uint64 argc, sz = 0, sp, ustack[MAXARG], stackbase, stacksize = 0;
   struct elfhdr elf;
   struct inode *ip;
   struct proghdr ph;
@@ -67,17 +67,20 @@ exec(char *path, char **argv)
 
   p = myproc();
   uint64 oldsz = p->sz;
+  uint64 oldstacksize = p->stacksize;
+  uint64 heapbase = sz;
 
   // Allocate two pages at the next page boundary.
   // Use the second as the user stack.
+  if (p->stacksize == 0)
+    p->stacksize = PGSIZE;
   sz = PGROUNDUP(sz);
-  uint64 sz1;
-  if((sz1 = uvmalloc(pagetable, sz, sz + 2*PGSIZE)) == 0)
+  sp = STACK;
+  stackbase = STACK - p->stacksize;
+  if(uvmalloc(pagetable, stackbase, sp) == 0) 
     goto bad;
-  sz = sz1;
-  uvmclear(pagetable, sz-2*PGSIZE);
-  sp = sz;
-  stackbase = sp - PGSIZE;
+  stacksize = p->stacksize;
+  
 
   // Push argument strings, prepare rest of stack in ustack.
   for(argc = 0; argv[argc]; argc++) {
@@ -116,15 +119,19 @@ exec(char *path, char **argv)
   oldpagetable = p->pagetable;
   p->pagetable = pagetable;
   p->sz = sz;
+  p->heapbase = heapbase;
   p->trapframe->epc = elf.entry;  // initial program counter = main
   p->trapframe->sp = sp; // initial stack pointer
-  proc_freepagetable(oldpagetable, oldsz);
+  proc_freepagetable(oldpagetable, oldsz, oldstacksize);
 
+  if(p->pid == 1)
+    vmprint(p->pagetable);
+  
   return argc; // this ends up in a0, the first argument to main(argc, argv)
 
  bad:
   if(pagetable)
-    proc_freepagetable(pagetable, sz);
+    proc_freepagetable(pagetable, sz, stacksize);
   if(ip){
     iunlockput(ip);
     end_op();

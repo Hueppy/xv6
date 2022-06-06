@@ -6,6 +6,7 @@
 #include "memlayout.h"
 #include "spinlock.h"
 #include "proc.h"
+#include "sysinfo.h"
 
 uint64
 sys_exit(void)
@@ -44,11 +45,16 @@ sys_sbrk(void)
   int addr;
   int n;
 
+  struct proc *p = myproc();
+
   if(argint(0, &n) < 0)
     return -1;
-  addr = myproc()->sz;
-  if(growproc(n) < 0)
-    return -1;
+  addr = p->sz;
+  p->sz += n;
+  if(n < 0) {
+    p->sz = uvmdealloc(p->pagetable, addr, p->sz);
+  }
+  
   return addr;
 }
 
@@ -70,6 +76,9 @@ sys_sleep(void)
     sleep(&ticks, &tickslock);
   }
   release(&tickslock);
+
+  backtrace();
+  
   return 0;
 }
 
@@ -95,6 +104,39 @@ sys_uptime(void)
   release(&tickslock);
   return xticks;
 }
+
+uint64
+sys_sysinfo(void)
+{
+  uint64 infoaddr;
+  struct sysinfo info;
+  struct proc *p = myproc();
+
+  if(argaddr(0, &infoaddr) < 0)
+    return -1;
+
+  info.freemem = kavail() * PGSIZE;
+  info.nproc = proccount();
+  
+  if(copyout(p->pagetable, infoaddr, (char*)&info, sizeof(struct sysinfo)) < 0)
+    return -1;
+
+  return 0;
+}
+
+uint64 sys_trace(void)
+{
+  int tracemask;
+  struct proc *p = myproc();
+  
+  if(argint(0, &tracemask) < 0)
+    return -1;
+
+  p->tracemask = tracemask;
+  
+  return 0;
+}
+
 
 uint64
 sys_getuid(void)
