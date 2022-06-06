@@ -138,6 +138,8 @@ UPROGS=\
 	$U/_trace\
 	$U/_bttest\
 	$U/_lazytests\
+	$U/_symlinktest\
+	$U/_permissiontest\
 
 fs.img: mkfs/mkfs README $(UPROGS)
 	mkfs/mkfs fs.img README $(UPROGS)

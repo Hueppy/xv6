@@ -108,6 +108,13 @@ extern uint64 sys_uptime(void);
 extern uint64 sys_lseek(void);
 extern uint64 sys_sysinfo(void);
 extern uint64 sys_trace(void);
+extern uint64 sys_symlink(void);
+extern uint64 sys_chown(void);
+extern uint64 sys_getuid(void);
+extern uint64 sys_setuid(void);
+extern uint64 sys_getgid(void);
+extern uint64 sys_setgid(void);
+extern uint64 sys_chmod(void);
 
 static uint64 (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -134,6 +141,13 @@ static uint64 (*syscalls[])(void) = {
 [SYS_lseek]   sys_lseek,
 [SYS_sysinfo] sys_sysinfo,
 [SYS_trace]   sys_trace,
+[SYS_symlink] sys_symlink,
+[SYS_chown]   sys_chown,
+[SYS_getuid]  sys_getuid,
+[SYS_setuid]  sys_setuid,
+[SYS_getgid]  sys_getgid,
+[SYS_setgid]  sys_setgid,
+[SYS_chmod]   sys_chmod,
 };
 
 static char *syscall_names[] = {
@@ -161,6 +175,13 @@ static char *syscall_names[] = {
 [SYS_lseek]   "lseek",
 [SYS_sysinfo] "sysinfo",
 [SYS_trace]   "trace",
+[SYS_symlink] "symlink",
+[SYS_chown]   "chown",
+[SYS_getuid]  "getuid",
+[SYS_setuid]  "setuid",
+[SYS_getgid]  "getgid",
+[SYS_setgid]  "setgid",
+[SYS_chmod]   "chmod",
 };
 
 void

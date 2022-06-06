@@ -38,7 +38,7 @@ void wsect(uint, void*);
 void winode(uint, struct dinode*);
 void rinode(uint inum, struct dinode *ip);
 void rsect(uint sec, void *buf);
-uint ialloc(ushort type);
+uint ialloc(ushort type, char *name);
 void iappend(uint inum, void *p, int n);
 void die(const char *);
 
@@ -114,7 +114,7 @@ main(int argc, char *argv[])
   memmove(buf, &sb, sizeof(sb));
   wsect(1, buf);
 
-  rootino = ialloc(T_DIR);
+  rootino = ialloc(T_DIR, "/");
   assert(rootino == ROOTINO);
 
   bzero(&de, sizeof(de));
@@ -147,7 +147,7 @@ main(int argc, char *argv[])
     if(shortname[0] == '_')
       shortname += 1;
 
-    inum = ialloc(T_FILE);
+    inum = ialloc(T_FILE, shortname);
 
     bzero(&de, sizeof(de));
     de.inum = xshort(inum);
@@ -218,15 +218,22 @@ rsect(uint sec, void *buf)
 }
 
 uint
-ialloc(ushort type)
+ialloc(ushort type, char *name)
 {
   uint inum = freeinode++;
   struct dinode din;
 
   bzero(&din, sizeof(din));
   din.type = xshort(type);
+  if(strncmp(name, "README", 6) == 0){
+    din.mode = 0b110100100;
+  } else {
+    din.mode = 0b111101101;
+  }
   din.nlink = xshort(1);
   din.size = xint(0);
+  din.uid = 0;
+  din.gid = 0;
   winode(inum, &din);
   return inum;
 }

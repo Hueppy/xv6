@@ -27,6 +27,13 @@ int uptime(void);
 int lseek(int fd, int offset, int whence);
 int sysinfo(struct sysinfo *);
 int trace(int tracemask);
+int symlink(char*, char*);
+int chown(char*, int, int);
+int getuid(void);
+int setuid(short);
+int getgid(void);
+int setgid(short);
+int chmod(char*, short);
 
 // ulib.c
 int stat(const char*, struct stat*);

@@ -93,6 +93,9 @@ struct proc {
   int xstate;                  // Exit status to be returned to parent's wait
   int pid;                     // Process ID
 
+  short uid;
+  short gid;
+
   // wait_lock must be held when using this:
   struct proc *parent;         // Parent process
 
@@ -109,3 +112,6 @@ struct proc {
   int tracemask;
   uint64 heapbase;
 };
+
+#define UID_ROOT 0
+#define GID_ROOT 0
