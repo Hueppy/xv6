@@ -109,3 +109,6 @@ struct proc {
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
 };
+
+#define UID_ROOT 0
+#define GID_ROOT 0

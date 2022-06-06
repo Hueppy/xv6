@@ -13,7 +13,7 @@ int
 exec(char *path, char **argv)
 {
   char *s, *last;
-  int i, off;
+  int i, off, perm;
   uint64 argc, sz = 0, sp, ustack[MAXARG], stackbase;
   struct elfhdr elf;
   struct inode *ip;
@@ -28,6 +28,10 @@ exec(char *path, char **argv)
     return -1;
   }
   ilock(ip);
+
+  perm = permission(ip, 0);
+  if(~perm & P_EXECUTE)
+    goto bad;
 
   // Check ELF header
   if(readi(ip, 0, (uint64)&elf, 0, sizeof(elf)) != sizeof(elf))

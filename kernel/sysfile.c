@@ -243,6 +243,7 @@ create(char *path, short type, short major, short minor)
 {
   struct inode *ip, *dp;
   char name[DIRSIZ];
+  struct proc *p = myproc();
 
   if((dp = nameiparent(path, name)) == 0)
     return 0;
@@ -262,9 +263,14 @@ create(char *path, short type, short major, short minor)
     panic("create: ialloc");
 
   ilock(ip);
+  ip->mode = MODE(P_RW, A_USER)
+           | MODE(P_RW, A_GROUP)
+           | MODE(P_READ, A_OTHER);
   ip->major = major;
   ip->minor = minor;
   ip->nlink = 1;
+  ip->uid = p->uid;
+  ip->gid = p->gid;
   iupdate(ip);
 
   if(type == T_DIR){  // Create . and .. entries.
@@ -291,6 +297,7 @@ sys_open(void)
   struct file *f;
   struct inode *ip;
   int n;
+  int perm;
 
   if((n = argstr(0, path, MAXPATH)) < 0 || argint(1, &omode) < 0)
     return -1;
@@ -314,6 +321,16 @@ sys_open(void)
       return -1;
     }
     ilock(ip);
+    
+    perm = permission(ip, 0);
+    if(((omode & O_RDONLY) && (~perm & P_READ))
+       || ((omode & O_WRONLY) && (~perm & P_WRITE))
+       || ((omode & O_RDWR) && ((~perm & P_READ) || (~perm & P_WRITE)))){
+      iunlockput(ip);
+      end_op();
+      return -1;
+    }
+    
     if(ip->type == T_DIR && omode != O_RDONLY){
       iunlockput(ip);
       end_op();
@@ -512,5 +529,76 @@ sys_symlink(void)
   iunlockput(ip);
   end_op();
 
+  return 0;
+}
+
+uint64
+sys_chown(void)
+{
+  char path[MAXPATH];
+  int uid, gid;
+  struct inode *ip;
+  
+  struct proc *p = myproc();
+
+  if(argstr(0, path, MAXPATH) < 0 || argint(1, &uid) || argint(2, &gid))
+    return -1;
+
+  begin_op();
+  if((ip = namei(path)) == 0){
+    end_op();
+    return -1;
+  }
+
+  ilock(ip);
+  
+  // permission check:
+  // on linux only a priviliedged process can change the owning user of a file
+  // and the owner (or root) can change the owning group of a file
+  if(p->uid == UID_ROOT){
+    ip->uid = uid;
+    ip->gid = gid;
+    iupdate(ip);
+  } else if(p->uid == ip->uid){
+    ip->gid = gid;
+    iupdate(ip);
+  }
+  
+  iunlockput(ip);  
+  end_op();
+
+  return 0;
+}
+
+uint64
+sys_chmod(void)
+{
+  char path[MAXPATH];
+  int mode;
+  struct inode *ip;
+  
+  struct proc *p = myproc();
+
+  if(argstr(0, path, MAXPATH) < 0 || argint(1, &mode))
+    return -1;
+
+  begin_op();
+  if((ip = namei(path)) == 0){
+    end_op();
+    return -1;
+  }
+
+  ilock(ip);
+
+  // permission check:
+  // on linux only a priviliedged process or the owning user can change the mode of a file
+  if(p->uid == UID_ROOT || p->uid == ip->uid){
+    ip->mode = mode;
+    iupdate(ip);
+  }
+  
+  iunlockput(ip);
+  end_op();
+  
   return 0;
 }

@@ -229,6 +229,9 @@ userinit(void)
 
   p = allocproc();
   initproc = p;
+
+  p->uid = UID_ROOT;
+  p->gid = GID_ROOT;
   
   // allocate one user page and copy init's instructions
   // and data into it.
@@ -304,6 +307,9 @@ fork(void)
   safestrcpy(np->name, p->name, sizeof(p->name));
 
   pid = np->pid;
+
+  np->uid = p->uid;
+  np->gid = p->gid;
 
   release(&np->lock);
 

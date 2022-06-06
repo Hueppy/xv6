@@ -227,9 +227,12 @@ iupdate(struct inode *ip)
   bp = bread(ip->dev, IBLOCK(ip->inum, sb));
   dip = (struct dinode*)bp->data + ip->inum%IPB;
   dip->type = ip->type;
+  dip->mode = ip->mode;
   dip->major = ip->major;
   dip->minor = ip->minor;
   dip->nlink = ip->nlink;
+  dip->uid = ip->uid;
+  dip->gid = ip->gid;
   dip->size = ip->size;
   memmove(dip->addrs, ip->addrs, sizeof(ip->addrs));
   log_write(bp);
@@ -300,9 +303,12 @@ ilock(struct inode *ip)
     bp = bread(ip->dev, IBLOCK(ip->inum, sb));
     dip = (struct dinode*)bp->data + ip->inum%IPB;
     ip->type = dip->type;
+    ip->mode = dip->mode;
     ip->major = dip->major;
     ip->minor = dip->minor;
     ip->nlink = dip->nlink;
+    ip->uid = dip->uid;
+    ip->gid = dip->gid;
     ip->size = dip->size;
     memmove(ip->addrs, dip->addrs, sizeof(ip->addrs));
     brelse(bp);
@@ -444,7 +450,10 @@ stati(struct inode *ip, struct stat *st)
   st->dev = ip->dev;
   st->ino = ip->inum;
   st->type = ip->type;
+  st->mode = ip->mode;
   st->nlink = ip->nlink;
+  st->uid = ip->uid;
+  st->gid = ip->gid;
   st->size = ip->size;
 }
 
@@ -692,4 +701,20 @@ followi(char *path)
   
   iunlockput(ip);
   return res;
+}
+
+int permission(struct inode *ip, int mask)
+{
+  struct proc *p = myproc();
+
+  if(p->uid == UID_ROOT)
+    return P_RWX;
+
+  if(p->uid == ip->uid)
+    return PERMISSIONS(ip->mode, A_USER);
+
+  if(p->gid == ip->gid)
+    return PERMISSIONS(ip->mode, A_GROUP);
+
+  return PERMISSIONS(ip->mode, A_OTHER);
 }
