@@ -672,3 +672,24 @@ nameiparent(char *path, char *name)
 {
   return namex(path, 1, name);
 }
+
+int
+followi(char *path)
+{
+  struct inode *ip;
+  int res = 0;
+
+  if((ip = namei(path)) == 0)
+    return 0;
+
+  if(holdingsleep(&ip->lock))
+     return -1;
+
+  ilock(ip);
+  
+  if(ip->type == T_SYMLINK && (readi(ip, 0, (uint64)path, 0, MAXPATH)) > 0)
+    res = followi(path);
+  
+  iunlockput(ip);
+  return res;
+}
