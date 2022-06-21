@@ -175,5 +175,32 @@ struct dns_data {
 // sntp reqest and response header
 // see: https://www.rfc-editor.org/rfc/rfc4330.html#page-8
 struct sntp {
-
+  uint8 header;
+  uint8 stratum;
+  uint8 poll;
+  uint8 precision;
+  uint32 root_delay;
+  uint32 root_dispersion;
+  uint32 ref_id;
+  uint64 ref_timestamp;
+  uint64 og_timestamp;
+  uint64 rx_timestamp;
+  uint64 tx_timestamp;
 } __attribute__((packed));
+
+#define SNTP_HEADER(LI, VN, MODE) ((LI << 6) | (VN << 3) | MODE)
+
+#define SNTP_LI(HEADER) (HEADER >> 6)
+#define SNTP_LI_NO_WARNING 0
+#define SNTP_LI_61_SECONDS 1
+#define SNTP_LI_59_SECONDS 2
+#define SNTP_LI_ALARM_COND 3
+
+#define SNTP_VN(HEADER) ((HEADER >> 3) & 0x07)
+#define SNTP_VN_4 4
+
+#define SNTP_MODE(HEADER) (HEADER & 0x07)
+#define SNTP_MODE_CLIENT 3
+#define SNTP_MODE_SERVER 4
+
+#define SNTP_STRATUM_KISSODEATH 0
