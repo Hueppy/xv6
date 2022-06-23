@@ -36,6 +36,7 @@ trapinithart(void)
 void
 usertrap(void)
 {
+  uint64 scause;
   int which_dev = 0;
 
   if((r_sstatus() & SSTATUS_SPP) != 0)
@@ -49,8 +50,9 @@ usertrap(void)
   
   // save user program counter.
   p->trapframe->epc = r_sepc();
-  
-  if(r_scause() == 8){
+
+  scause = r_scause();
+  if(scause == 8){
     // system call
 
     if(lockfree_read4(&p->killed))
@@ -65,6 +67,13 @@ usertrap(void)
     intr_on();
 
     syscall();
+  } else if(scause == 13 || scause == 15){
+    // page fault
+    // stval contains virtual address that caused the page fault on access
+    
+    if(uvmalloc_lazy(p, r_stval()))
+      p->killed = 1;
+    
   } else if((which_dev = devintr()) != 0){
     // ok
   } else {

@@ -137,6 +137,14 @@ UPROGS=\
 	$U/_grind\
 	$U/_wc\
 	$U/_zombie\
+	$U/_find\
+	$U/_lseektest\
+	$U/_sysinfotest\
+	$U/_trace\
+	$U/_bttest\
+	$U/_lazytests\
+	$U/_symlinktest\
+	$U/_permissiontest\
 	$U/_nettests\
 	$U/_sntp\
 

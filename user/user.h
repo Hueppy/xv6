@@ -24,6 +24,16 @@ int getpid(void);
 char* sbrk(int);
 int sleep(int);
 int uptime(void);
+int lseek(int fd, int offset, int whence);
+int sysinfo(struct sysinfo *);
+int trace(int tracemask);
+int symlink(char*, char*);
+int chown(char*, int, int);
+int getuid(void);
+int setuid(short);
+int getgid(void);
+int setgid(short);
+int chmod(char*, short);
 int connect(uint32, uint16, uint16);
 
 // ulib.c
@@ -42,4 +52,5 @@ void free(void*);
 int atoi(const char*);
 int memcmp(const void *, const void *, uint);
 void *memcpy(void *, const void *, uint);
+char *strstr(const char *, const char *);
 int statistics(void*, int);

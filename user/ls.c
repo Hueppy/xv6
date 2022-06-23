@@ -3,6 +3,8 @@
 #include "user/user.h"
 #include "kernel/fs.h"
 
+#define PERMISSION_LENGTH 9
+
 char*
 fmtname(char *path)
 {
@@ -23,9 +25,28 @@ fmtname(char *path)
 }
 
 void
+fmtmode(short mode, char *perm){
+  char *template = "rwxrwxrwx";
+  int mask;
+
+  mask = 1 << (PERMISSION_LENGTH - 1);
+  while(mask > 0){
+    if(mode & mask){
+      *perm = *template;
+    } else {
+      *perm = '-';
+    }
+    
+    perm++;
+    template++;
+    mask >>= 1;
+  }
+}
+
+void
 ls(char *path)
 {
-  char buf[512], *p;
+  char buf[512], *p, mode[PERMISSION_LENGTH + 1];
   int fd;
   struct dirent de;
   struct stat st;
@@ -43,7 +64,9 @@ ls(char *path)
 
   switch(st.type){
   case T_FILE:
-    printf("%s %d %d %l\n", fmtname(path), st.type, st.ino, st.size);
+    mode[0] = '-';
+    fmtmode(st.mode, mode + 1);
+    printf("%s %d %d %d %l %s\n", mode, st.nlink, st.uid, st.gid, st.size, fmtname(path));
     break;
 
   case T_DIR:
@@ -63,7 +86,15 @@ ls(char *path)
         printf("ls: cannot stat %s\n", buf);
         continue;
       }
-      printf("%s %d %d %d\n", fmtname(buf), st.type, st.ino, st.size);
+
+      if(st.type == T_DIR)
+        mode[0] = 'd';
+      else if(st.type == T_SYMLINK)
+        mode[0] = 'l';
+      else
+        mode[0] = '-';
+      fmtmode(st.mode, mode + 1);
+      printf("%s %d %d %d %l %s\n", mode, st.nlink, st.uid, st.gid, st.size, fmtname(buf));
     }
     break;
   }

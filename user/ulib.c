@@ -134,3 +134,20 @@ memcpy(void *dst, const void *src, uint n)
 {
   return memmove(dst, src, n);
 }
+
+char *
+strstr(const char *h, const char *n)
+{
+  const uint nlen = strlen(n);
+  
+  while((h = strchr(h, *n)) != 0){
+    if (strlen(h) < nlen) {
+      h = 0;
+      break;
+    }
+    if (memcmp(h, n, nlen) == 0)
+      break;
+    h++;
+  }
+  return (char *)h;
+}

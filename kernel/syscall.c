@@ -12,7 +12,8 @@ int
 fetchaddr(uint64 addr, uint64 *ip)
 {
   struct proc *p = myproc();
-  if(addr >= p->sz || addr+sizeof(uint64) > p->sz)
+  // check if address is inside lower processs memory or inside the user stack
+  if((addr >= p->sz || addr+sizeof(uint64) > p->sz) && (addr > STACK && addr < STACK - p->stacksize))
     return -1;
   if(copyin(p->pagetable, (char *)ip, addr, sizeof(*ip)) != 0)
     return -1;
@@ -104,6 +105,16 @@ extern uint64 sys_unlink(void);
 extern uint64 sys_wait(void);
 extern uint64 sys_write(void);
 extern uint64 sys_uptime(void);
+extern uint64 sys_lseek(void);
+extern uint64 sys_sysinfo(void);
+extern uint64 sys_trace(void);
+extern uint64 sys_symlink(void);
+extern uint64 sys_chown(void);
+extern uint64 sys_getuid(void);
+extern uint64 sys_setuid(void);
+extern uint64 sys_getgid(void);
+extern uint64 sys_setgid(void);
+extern uint64 sys_chmod(void);
 extern uint64 sys_connect(void);
 
 static uint64 (*syscalls[])(void) = {
@@ -128,7 +139,52 @@ static uint64 (*syscalls[])(void) = {
 [SYS_link]    sys_link,
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
+[SYS_lseek]   sys_lseek,
+[SYS_sysinfo] sys_sysinfo,
+[SYS_trace]   sys_trace,
+[SYS_symlink] sys_symlink,
+[SYS_chown]   sys_chown,
+[SYS_getuid]  sys_getuid,
+[SYS_setuid]  sys_setuid,
+[SYS_getgid]  sys_getgid,
+[SYS_setgid]  sys_setgid,
+[SYS_chmod]   sys_chmod,
 [SYS_connect] sys_connect,
+};
+
+static char *syscall_names[] = {
+[SYS_fork]    "fork",
+[SYS_exit]    "exit",
+[SYS_wait]    "wait",
+[SYS_pipe]    "pipe",
+[SYS_read]    "read",
+[SYS_kill]    "kill",
+[SYS_exec]    "exec",
+[SYS_fstat]   "fstat",
+[SYS_chdir]   "chdir",
+[SYS_dup]     "dup",
+[SYS_getpid]  "getpid",
+[SYS_sbrk]    "sbrk",
+[SYS_sleep]   "sleep",
+[SYS_uptime]  "uptime",
+[SYS_open]    "open",
+[SYS_write]   "write",
+[SYS_mknod]   "mknod",
+[SYS_unlink]  "unlink",
+[SYS_link]    "link",
+[SYS_mkdir]   "mkdir",
+[SYS_close]   "close",
+[SYS_lseek]   "lseek",
+[SYS_sysinfo] "sysinfo",
+[SYS_trace]   "trace",
+[SYS_symlink] "symlink",
+[SYS_chown]   "chown",
+[SYS_getuid]  "getuid",
+[SYS_setuid]  "setuid",
+[SYS_getgid]  "getgid",
+[SYS_setgid]  "setgid",
+[SYS_chmod]   "chmod",
+[SYS_connect] "connect",
 };
 
 
@@ -142,6 +198,10 @@ syscall(void)
   num = p->trapframe->a7;
   if(num > 0 && num < NELEM(syscalls) && syscalls[num]) {
     p->trapframe->a0 = syscalls[num]();
+    if((p->tracemask & (1 << num)) > 0){
+      printf("%d: syscall %s -> %d\n", p->pid, syscall_names[num], p->trapframe->a0);
+      
+    }
   } else {
     printf("%d %s: unknown sys call %d\n",
             p->pid, p->name, num);

@@ -93,6 +93,9 @@ struct proc {
   int xstate;                  // Exit status to be returned to parent's wait
   int pid;                     // Process ID
 
+  short uid;
+  short gid;
+
   // wait_lock must be held when using this:
   struct proc *parent;         // Parent process
 
@@ -105,4 +108,10 @@ struct proc {
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+  uint64 stacksize;
+  int tracemask;
+  uint64 heapbase;
 };
+
+#define UID_ROOT 0
+#define GID_ROOT 0
