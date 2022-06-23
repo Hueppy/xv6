@@ -34,6 +34,7 @@ int setuid(short);
 int getgid(void);
 int setgid(short);
 int chmod(char*, short);
+int connect(uint32, uint16, uint16);
 
 // ulib.c
 int stat(const char*, struct stat*);
@@ -52,3 +53,4 @@ int atoi(const char*);
 int memcmp(const void *, const void *, uint);
 void *memcpy(void *, const void *, uint);
 char *strstr(const char *, const char *);
+int statistics(void*, int);

@@ -23,14 +23,15 @@ acquire(struct spinlock *lk)
 {
   push_off(); // disable interrupts to avoid deadlock.
   if(holding(lk))
-    panic("acquire");
+    panic("acquire");     
 
   // On RISC-V, sync_lock_test_and_set turns into an atomic swap:
   //   a5 = 1
   //   s1 = &lk->locked
   //   amoswap.w.aq a5, a5, (s1)
-  while(__sync_lock_test_and_set(&lk->locked, 1) != 0)
-    ;
+  while(__sync_lock_test_and_set(&lk->locked, 1) != 0) {
+   ;
+  }
 
   // Tell the C compiler and the processor to not move loads or stores
   // past this point, to ensure that the critical section's memory
@@ -108,3 +109,20 @@ pop_off(void)
   if(c->noff == 0 && c->intena)
     intr_on();
 }
+
+// Read a shared 64-bit value without holding a lock
+uint64
+lockfree_read8(uint64 *addr) {
+  uint64 val;
+  __atomic_load(addr, &val, __ATOMIC_SEQ_CST);
+  return val;
+}
+
+// Read a shared 32-bit value without holding a lock
+int
+lockfree_read4(int *addr) {
+  uint32 val;
+  __atomic_load(addr, &val, __ATOMIC_SEQ_CST);
+  return val;
+}
+

@@ -4,9 +4,9 @@
 #include "elf.h"
 #include "riscv.h"
 #include "defs.h"
-#include "fs.h"
 #include "spinlock.h"
 #include "proc.h"
+#include "fs.h"
 
 /*
  * the kernel's page table.
@@ -31,6 +31,12 @@ kvmmake(void)
 
   // virtio mmio disk interface
   kvmmap(kpgtbl, VIRTIO0, VIRTIO0, PGSIZE, PTE_R | PTE_W);
+
+  // PCI-E ECAM (configuration space), for pci.c
+  kvmmap(kpgtbl, 0x30000000L, 0x30000000L, 0x10000000, PTE_R | PTE_W);
+
+  // pci.c maps the e1000's registers here.
+  kvmmap(kpgtbl, 0x40000000L, 0x40000000L, 0x20000, PTE_R | PTE_W);
 
   // PLIC
   kvmmap(kpgtbl, PLIC, PLIC, 0x400000, PTE_R | PTE_W);
@@ -371,7 +377,7 @@ int
 copyin(pagetable_t pagetable, char *dst, uint64 srcva, uint64 len)
 {
   uint64 n, va0, pa0;
-
+  
   while(len > 0){
     va0 = PGROUNDDOWN(srcva);
     pa0 = walkaddr(pagetable, va0);

@@ -115,6 +115,7 @@ extern uint64 sys_setuid(void);
 extern uint64 sys_getgid(void);
 extern uint64 sys_setgid(void);
 extern uint64 sys_chmod(void);
+extern uint64 sys_connect(void);
 
 static uint64 (*syscalls[])(void) = {
 [SYS_fork]    sys_fork,
@@ -148,6 +149,7 @@ static uint64 (*syscalls[])(void) = {
 [SYS_getgid]  sys_getgid,
 [SYS_setgid]  sys_setgid,
 [SYS_chmod]   sys_chmod,
+[SYS_connect] sys_connect,
 };
 
 static char *syscall_names[] = {
@@ -182,7 +184,10 @@ static char *syscall_names[] = {
 [SYS_getgid]  "getgid",
 [SYS_setgid]  "setgid",
 [SYS_chmod]   "chmod",
+[SYS_connect] "connect",
 };
+
+
 
 void
 syscall(void)
